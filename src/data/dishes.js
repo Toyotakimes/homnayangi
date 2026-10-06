@@ -6,7 +6,7 @@ function normalizeImage(dish) {
   const url = rawImage?.url || dish.imageUrl || (typeof dish.image === 'string' ? dish.image : '')
   const confidence = Number(rawImage?.confidence ?? dish.imageConfidence ?? 0)
   const verified = Boolean(rawImage?.verified ?? dish.imageVerified) && confidence >= 80
-  if (!url || !verified) return null
+  if (!url) return null
   return {
     url,
     source: rawImage?.source || dish.imageSource || '',

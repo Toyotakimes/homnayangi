@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { dishImageCacheKey, resolveDishImage, invalidateDishImage } from '../utils/dishImageResolver'
+import { dishImageCacheKey, getAvailableDishImage, resolveDishImage } from '../utils/dishImageResolver'
 
 export const fallbackImage =
   "data:image/svg+xml;charset=UTF-8," +
@@ -11,11 +11,13 @@ export const fallbackImage =
 
 export default function FoodImage({ dish, className = '' }) {
   const [resolved, setResolved] = useState(null)
+  const [failedUrl, setFailedUrl] = useState(null)
   const imageRef = useRef(null)
   const key = dishImageCacheKey(dish)
   useEffect(() => {
     let active = true
-    setResolved(null)
+    setResolved({ key, image: getAvailableDishImage(dish) })
+    setFailedUrl(null)
     const load = () => {
       resolveDishImage(dish).then(image => {
         if (active) setResolved({ key, image })
@@ -35,13 +37,13 @@ export default function FoodImage({ dish, className = '' }) {
     return () => { active = false; observer.disconnect() }
   }, [key])
 
-  const image = resolved?.key === key ? resolved.image : null
+  const candidate = resolved?.key === key ? resolved.image : getAvailableDishImage(dish)
+  const image = candidate?.url === failedUrl ? null : candidate
   return <div className="food-image-wrap" ref={imageRef}>
     <img className={className} loading="lazy" src={image?.url || fallbackImage}
       alt={image ? dish.name : 'Chưa có ảnh món ăn được xác minh'}
       onError={image ? () => {
-        invalidateDishImage(dish)
-        setResolved(null)
+        setFailedUrl(image.url)
       } : undefined} />
     {image?.sourceUrl && <a className="image-credit" href={image.sourceUrl}
       target="_blank" rel="noreferrer" title={`Nguồn: ${image.title}`}>

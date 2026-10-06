@@ -22,7 +22,42 @@ export function dishImageCacheKey(dish) {
 }
 
 function safeUrl(value) {
-  try { return new URL(value).protocol === 'https:' } catch { return false }
+  try {
+    const url = new URL(value, 'https://toyotakimes.github.io/homnayangi/')
+    return typeof value === 'string' && value.trim() !== '' && ['https:', 'http:'].includes(url.protocol)
+  } catch { return false }
+}
+
+function existingImage(value, fallbackUrl = '') {
+  let raw = value
+  if (typeof raw === 'string') {
+    try { raw = JSON.parse(raw) } catch { raw = { url: raw } }
+  }
+  if (typeof raw === 'string') raw = { url: raw }
+  if (!raw || typeof raw !== 'object') raw = { url: fallbackUrl }
+  if (raw.status === 'miss') return null
+  const url = raw.url || raw.imageUrl || (typeof raw.image === 'string' ? raw.image : raw.image?.url) || fallbackUrl
+  return safeUrl(url) ? { ...raw, url } : null
+}
+
+// Preserve legacy entries; copying is additive and does not assert verification.
+export function getAvailableDishImage(dish) {
+  const verified = manualImage(dish)
+    || (dish.image?.source === 'themealdb' ? verifyMealImage(dish, dish.image.evidence) : null)
+  if (verified) return verified
+  const current = existingImage(dish.image, dish.imageUrl)
+  if (current) return current
+  for (const version of [2, 3, 4]) {
+    const old = existingImage(readCache(`foodimg_v${version}_${dish.id}`))
+    if (old) {
+      writeCache(`foodimg_migrated_${dish.id}`, { image: old })
+      return old
+    }
+  }
+  const migrated = existingImage(readCache(`foodimg_migrated_${dish.id}`)?.image)
+  if (migrated) return migrated
+  const cached = readCache(dishImageCacheKey(dish))
+  return existingImage(cached?.image)
 }
 
 export function verifyMealImage(dish, meal) {
@@ -69,7 +104,11 @@ async function findMealDB(dish) {
 const providers = [findMealDB]
 
 function readCache(key) {
-  try { return JSON.parse(localStorage.getItem(key)) || memory.get(key) } catch { return memory.get(key) }
+  try {
+    const value = localStorage.getItem(key)
+    if (!value) return memory.get(key)
+    try { return JSON.parse(value) } catch { return value }
+  } catch { return memory.get(key) }
 }
 function writeCache(key, entry) {
   memory.set(key, entry)
@@ -80,6 +119,8 @@ export function invalidateDishImage(dish) {
 }
 
 export async function resolveDishImage(dish) {
+  const available = getAvailableDishImage(dish)
+  if (available) return available
   const key = dishImageCacheKey(dish)
   const owned = manualImage(dish)
   const cached = readCache(key)

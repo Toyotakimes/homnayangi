@@ -17,9 +17,15 @@ nội dung pixel; cần kiểm duyệt nếu dữ liệu nguồn gắn nhầm �
 Ảnh thủ công cần source `manual`/`owner-upload`, verified true, confidence >=80,
 URL HTTPS và title trùng tên/alias đầy đủ. Không suy diễn source thành manual.
 
-Cache v5 không đọc cache cũ. Cache lưu bằng chứng để kiểm tra lại; ảnh đúng
+Chế độ phục hồi giữ ảnh có sẵn dù chưa verified và đọc cache v2/v3/v4
+trước cache v5. Migration sao chép thêm vào `foodimg_migrated_<id>`;
+không xóa cache gốc, không gán verified cho ảnh cũ. App không dọn cache ảnh.
+Ảnh verified → URL món hiện có → cache cũ → cache mới → tìm kiếm → placeholder.
+Tìm kiếm chỉ chạy cho thẻ món gần viewport và chưa có URL/cache;
+không quét danh sách 1.000 món. Cache tìm kiếm lưu bằng chứng; ảnh đúng
 hết hạn sau 7 ngày, không tìm thấy sau 24 giờ, lỗi mạng/ảnh sau 1 phút.
 localStorage bị khóa không ngăn hiển thị. Các yêu cầu trùng được gộp lại.
+Lỗi tải ảnh chỉ chuyển sang placeholder ở component, không xóa URL/cache gốc.
 
 Cấu hình `VITE_THEMEALDB_API_KEY` trong môi trường Vite nếu có key riêng;
 mặc định dùng key phát triển `1`. Quy định nguồn: https://www.themealdb.com/api.php

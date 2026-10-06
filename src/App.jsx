@@ -77,11 +77,6 @@ function App() {
   useEffect(() => localStorage.setItem('homnayangi_week', JSON.stringify(weekPlan)), [weekPlan])
   useEffect(() => localStorage.setItem('homnayangi_checked_shopping', JSON.stringify(checkedShopping)), [checkedShopping])
   useEffect(() => setVisibleDishCount(150), [meal, budget, search, cookingMethod, priceRange])
-  useEffect(() => {
-    for (const key of Object.keys(localStorage)) {
-      if (key.startsWith('foodimg_') && !key.startsWith('foodimg_v4_')) localStorage.removeItem(key)
-    }
-  }, [])
 
   const filtered = useMemo(() => dishes.filter(dish => {
     const query = search.toLocaleLowerCase('vi').trim()
