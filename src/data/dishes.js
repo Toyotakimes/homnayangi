@@ -9,7 +9,7 @@ function normalizeImage(dish) {
   if (!url || !verified) return null
   return {
     url,
-    source: rawImage?.source || dish.imageSource || 'manual',
+    source: rawImage?.source || dish.imageSource || '',
     sourceName: rawImage?.sourceName || dish.imageSourceName || '',
     sourceUrl: rawImage?.sourceUrl || dish.imageSourceUrl || '',
     title: rawImage?.title || dish.imageTitle || '',
