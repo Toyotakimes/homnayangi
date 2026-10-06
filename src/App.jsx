@@ -1,162 +1,58 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import dishes from './data/dishes.json'
-
-const fallbackImage =
-  "data:image/svg+xml;charset=UTF-8," +
-  encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 520">
-    <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#fff7ed"/><stop offset="1" stop-color="#fed7aa"/>
-    </linearGradient></defs>
-    <rect width="800" height="520" fill="url(#g)"/>
-    <circle cx="400" cy="250" r="135" fill="#fff" stroke="#fb923c" stroke-width="18"/>
-    <circle cx="400" cy="250" r="70" fill="#fdba74"/>
-    <path d="M220 75v160M190 75v70M250 75v70M580 75v160" stroke="#9a3412" stroke-width="22" stroke-linecap="round"/>
-    <text x="400" y="445" text-anchor="middle" font-size="42" font-family="Arial" fill="#9a3412">Hôm Nay Ăn Gì?</text>
-  </svg>`)
+import dishes from './data/dishes.js'
+import DishCard from './components/DishCard'
+import RecipeDetail from './components/RecipeDetail'
+import { averageDishCost, estimateDishCost, formatMoney } from './utils/costCalculator'
+import { getDishRecipe, getScaledRecipeItems } from './utils/recipeScaler'
+import { chooseTray, generateWeekPlan } from './utils/mealGenerator'
+import { COOKING_METHOD_FILTERS, matchesCookingMethod } from './utils/cookingMethod'
 
 const moneyOptions = [
   { label: '≤ 50k/người', max: 50000 },
   { label: '≤ 80k/người', max: 80000 },
   { label: '≤ 120k/người', max: 120000 },
   { label: '≤ 180k/người', max: 180000 },
-  { label: 'Không giới hạn', max: 999999 }
+  { label: 'Không giới hạn', max: 999999 },
 ]
+const meals = ['Sáng', 'Trưa', 'Tối', 'Ăn vặt', 'Tất cả']
+const tabs = ['Hôm nay', 'Món ăn', '7 ngày', 'Đi chợ', 'Yêu thích', 'Lịch sử']
+const dayNames = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ nhật']
+const moneyRange = cost => `${formatMoney(cost.min)}–${formatMoney(cost.max)}`
 
-const days = ['Thứ 2','Thứ 3','Thứ 4','Thứ 5','Thứ 6','Thứ 7','Chủ nhật']
-const mainCategories = ['Món mặn','Món kho/rim','Món xào','Món chiên/rán','Món nướng','Món hấp/luộc']
-const fmt = n => new Intl.NumberFormat('vi-VN').format(Math.round(n)) + 'đ'
+function readStorage(key, fallback) {
+  try { return JSON.parse(localStorage.getItem(key) || 'null') ?? fallback }
+  catch { return fallback }
+}
 
-function parseCostRange(text='') {
-  const nums = [...text.matchAll(/([\\d.]+)\\s*đ/g)].map(m => Number(m[1].replaceAll('.', '')))
-  if (!nums.length) return [30000, 60000]
-  if (nums.length === 1) return [nums[0], nums[0]]
-  return [Math.min(...nums), Math.max(...nums)]
-}
-function avgCost(dish) {
-  const [min,max] = parseCostRange(dish.costText)
-  return Math.round((min + max) / 2)
-}
-function randomOne(arr) { return arr.length ? arr[Math.floor(Math.random() * arr.length)] : null }
 function mealMatches(dish, meal) {
   if (meal === 'Tất cả') return true
-  const m = dish.meal || ''
-  if (meal === 'Sáng') return m.includes('Sáng')
-  if (meal === 'Trưa') return m.includes('Trưa')
-  if (meal === 'Tối') return m.includes('Tối')
-  if (meal === 'Ăn vặt') return m.includes('Ăn vặt') || dish.category.includes('Ăn vặt')
-  return true
+  const dishMeals = dish.meal || ''
+  if (meal === 'Ăn vặt') return dishMeals.includes('Ăn vặt') || dish.category.includes('Ăn vặt')
+  return dishMeals.includes(meal)
 }
 
-function dishIngredients(dish, people=2) {
-  const base = Math.max(1, people)
-  const ingredient = (dish.mainIngredient || 'nguyên liệu chính').replace(/^Theo món$/i, dish.name)
-  const category = dish.category || ''
-  const items = []
-  if (/thịt|bò|gà|vịt|cá|tôm|mực|cua|ghẹ|ốc|ngao|hến|lươn|ếch|dê|bê/i.test(ingredient + ' ' + dish.name)) {
-    items.push({name: ingredient, qty: `${150*base}–${220*base}g`})
-  } else if (/đậu|trứng/i.test(ingredient + ' ' + dish.name)) {
-    items.push({name: ingredient, qty: `${base + 1} phần/quả`})
-  } else if (/rau|cải|bí|mướp|nấm|su su|bắp cải/i.test(ingredient + ' ' + dish.name)) {
-    items.push({name: ingredient, qty: `${200 + 80*base}g`})
-  } else {
-    items.push({name: ingredient, qty: `${base} phần`})
-  }
-  if (category === 'Canh') items.push({name:'Nước dùng', qty:`${350 + 180*base}ml`})
-  if (/Ăn sáng|Món nước|Bún|Phở|Miến|Bánh canh/i.test(category + ' ' + dish.name)) items.push({name:'Bún/phở/mì hoặc tinh bột', qty:`${120*base}g`})
-  items.push({name:'Hành/tỏi/gừng/rau thơm', qty:'vừa đủ'})
-  items.push({name:'Nước mắm, muối, đường, tiêu', qty:'vừa ăn'})
-  return items
+function randomOne(items) {
+  return items.length ? items[Math.floor(Math.random() * items.length)] : null
 }
 
-function cookingSteps(dish) {
-  const raw = (dish.method || '').split(';').map(x=>x.trim()).filter(Boolean)
-  if (raw.length >= 3) return raw
-  return [
-    `Sơ chế ${dish.mainIngredient && dish.mainIngredient !== 'Theo món' ? dish.mainIngredient : 'nguyên liệu'} sạch và để ráo.`,
-    'Ướp/nêm gia vị vừa ăn trong 10–15 phút.',
-    dish.method || 'Chế biến đến khi nguyên liệu chín vừa.',
-    'Nếm lại, hoàn thiện và dùng khi còn nóng.'
-  ]
+function aggregateIngredients(selectedDishes, people) {
+  const totals = new Map()
+  selectedDishes.filter(Boolean).forEach(dish => {
+    const { ingredients, seasoning } = getScaledRecipeItems(dish, people)
+    ;[...ingredients, ...seasoning].forEach(item => {
+      if (!Number.isFinite(item.scaledAmount)) return
+      const key = `${item.name.trim().toLocaleLowerCase('vi')}|${item.unit}`
+      if (!totals.has(key)) totals.set(key, { name: item.name, amount: 0, unit: item.unit })
+      totals.get(key).amount += item.scaledAmount
+    })
+  })
+  return [...totals.values()].sort((a, b) => a.name.localeCompare(b.name, 'vi'))
 }
 
-async function lookupWikiImage(dish) {
-  const key = 'foodimg_' + dish.id
-  const saved = localStorage.getItem(key)
-  if (saved) return saved === 'NONE' ? '' : saved
-  const searches = [dish.name, dish.imageKeyword].filter(Boolean)
-  for (const q of searches) {
-    try {
-      const url = 'https://vi.wikipedia.org/w/api.php?action=query&generator=search&gsrsearch=' +
-        encodeURIComponent(q) + '&gsrlimit=4&prop=pageimages&piprop=thumbnail&pithumbsize=900&format=json&origin=*'
-      const res = await fetch(url)
-      const json = await res.json()
-      const pages = Object.values(json?.query?.pages || {})
-      const found = pages.find(p => p.thumbnail?.source)
-      if (found?.thumbnail?.source) {
-        localStorage.setItem(key, found.thumbnail.source)
-        return found.thumbnail.source
-      }
-    } catch {}
-  }
-  localStorage.setItem(key, 'NONE')
-  return ''
-}
-
-function FoodImage({dish, className=''}) {
-  const [src,setSrc] = useState(dish.image || '')
-  useEffect(()=>{
-    let active = true
-    if (!dish.image) lookupWikiImage(dish).then(x=>active && setSrc(x))
-    return ()=>{ active=false }
-  },[dish.id, dish.image])
-  return <img className={className} loading="lazy" src={src || fallbackImage} alt={dish.name}
-    onError={e=>{ e.currentTarget.src=fallbackImage }} />
-}
-
-function IngredientList({dish, people}) {
-  return <div className="ingredients">
-    {dishIngredients(dish,people).map((x,i)=><div key={i}><span>{x.name}</span><b>{x.qty}</b></div>)}
-  </div>
-}
-
-function DishCard({ dish, onLike, liked, people=2, compact=false }) {
-  if (!dish) return null
-  const total = avgCost(dish) * people
-  return <article className={`dish-card ${compact ? 'compact' : ''}`}>
-    <FoodImage dish={dish} />
-    <div className="dish-body">
-      <div className="dish-top">
-        <span className="pill">{dish.category}</span>
-        <button aria-label="Yêu thích" className={`heart ${liked ? 'active' : ''}`} onClick={() => onLike(dish)}>♥</button>
-      </div>
-      <h3>{dish.name}</h3>
-      <p className="muted">{dish.meal} · {dish.costText}</p>
-      <div className="cost-box"><span>Dự kiến cho {people} người</span><strong>{fmt(total)}</strong></div>
-      <details>
-        <summary>Nguyên liệu & cách nấu</summary>
-        <IngredientList dish={dish} people={people}/>
-        <ol className="steps">{cookingSteps(dish).map((s,i)=><li key={i}>{s}</li>)}</ol>
-      </details>
-    </div>
-  </article>
-}
-
-function chooseTray(meal,budget,people,avoidIds=new Set()) {
-  const eligible = dishes.filter(d => mealMatches(d, meal) && !avoidIds.has(d.id))
-  const mains = eligible.filter(d => mainCategories.includes(d.category))
-  const soups = eligible.filter(d => d.category === 'Canh')
-  const vegs = eligible.filter(d => d.category === 'Rau/Củ')
-  let best = []
-  let bestCost = Infinity
-  const maxTotal = budget * people
-  for (let i=0;i<60;i++) {
-    const combo = [randomOne(mains),randomOne(soups),randomOne(vegs)].filter(Boolean)
-    const unique = [...new Map(combo.map(x=>[x.id,x])).values()]
-    const cost = unique.reduce((s,d)=>s + avgCost(d)*people,0)
-    if (cost <= maxTotal && unique.length >= 2) return unique
-    if (cost < bestCost) { best = unique; bestCost = cost }
-  }
-  return best
+function quantityText(amount, unit) {
+  if (unit === 'g' && amount >= 1000) return `${(amount / 1000).toLocaleString('vi-VN', { maximumFractionDigits: 1 })} kg`
+  const rounded = Number.isInteger(amount) ? amount : Number(amount.toFixed(2))
+  return `${rounded.toLocaleString('vi-VN')} ${unit}`
 }
 
 function App() {
@@ -165,82 +61,104 @@ function App() {
   const [budget, setBudget] = useState(80000)
   const [mode, setMode] = useState('Món đơn')
   const [search, setSearch] = useState('')
+  const [cookingMethod, setCookingMethod] = useState('Tất cả')
+  const [priceRange, setPriceRange] = useState('Tất cả')
+  const [visibleDishCount, setVisibleDishCount] = useState(150)
   const [selected, setSelected] = useState(null)
   const [tray, setTray] = useState([])
   const [tab, setTab] = useState('Hôm nay')
-  const [likes, setLikes] = useState(() => JSON.parse(localStorage.getItem('homnayangi_likes') || '[]'))
-  const [history, setHistory] = useState(() => JSON.parse(localStorage.getItem('homnayangi_history') || '[]'))
-  const [weekPlan, setWeekPlan] = useState(() => JSON.parse(localStorage.getItem('homnayangi_week') || '[]'))
+  const [likes, setLikes] = useState(() => readStorage('homnayangi_likes', []))
+  const [history, setHistory] = useState(() => readStorage('homnayangi_history', []))
+  const [weekPlan, setWeekPlan] = useState(() => readStorage('homnayangi_week', []))
+  const [checkedShopping, setCheckedShopping] = useState(() => readStorage('homnayangi_checked_shopping', {}))
 
   useEffect(() => localStorage.setItem('homnayangi_likes', JSON.stringify(likes)), [likes])
   useEffect(() => localStorage.setItem('homnayangi_history', JSON.stringify(history.slice(0, 50))), [history])
   useEffect(() => localStorage.setItem('homnayangi_week', JSON.stringify(weekPlan)), [weekPlan])
+  useEffect(() => localStorage.setItem('homnayangi_checked_shopping', JSON.stringify(checkedShopping)), [checkedShopping])
+  useEffect(() => setVisibleDishCount(150), [meal, budget, search, cookingMethod, priceRange])
+  useEffect(() => {
+    for (const key of Object.keys(localStorage)) {
+      if (key.startsWith('foodimg_') && !key.startsWith('foodimg_v4_')) localStorage.removeItem(key)
+    }
+  }, [])
 
-  const filtered = useMemo(() => dishes.filter(d => {
-    const q = search.toLowerCase().trim()
-    return mealMatches(d, meal)
-      && avgCost(d) <= budget
-      && (!q || d.name.toLowerCase().includes(q) || d.category.toLowerCase().includes(q) || (d.style||'').toLowerCase().includes(q))
-  }), [meal, budget, search])
+  const filtered = useMemo(() => dishes.filter(dish => {
+    const query = search.toLocaleLowerCase('vi').trim()
+    const searchable = `${dish.name} ${dish.category} ${dish.style || ''} ${dish.cookingMethod}`.toLocaleLowerCase('vi')
+    const averagePrice = averageDishCost(dish, 1)
+    const inPriceRange = priceRange === 'Tất cả'
+      || (priceRange === '0-30000' && averagePrice <= 30000)
+      || (priceRange === '30000-60000' && averagePrice > 30000 && averagePrice <= 60000)
+      || (priceRange === '60000-100000' && averagePrice > 60000 && averagePrice <= 100000)
+      || (priceRange === '100000+' && averagePrice > 100000)
+    return mealMatches(dish, meal)
+      && matchesCookingMethod(dish, cookingMethod)
+      && averagePrice <= budget
+      && inPriceRange
+      && (!query || searchable.includes(query))
+  }), [meal, budget, search, cookingMethod, priceRange])
 
-  const like = dish => setLikes(prev => prev.includes(dish.id) ? prev.filter(x => x !== dish.id) : [...prev, dish.id])
-  const remember = dish => setHistory(prev => [{ id: dish.id, name: dish.name, at: new Date().toLocaleString('vi-VN') }, ...prev.filter(x => x.id !== dish.id)])
+  const like = dish => setLikes(previous => previous.includes(dish.id)
+    ? previous.filter(id => id !== dish.id)
+    : [...previous, dish.id])
+  const remember = dish => setHistory(previous => [
+    { id: dish.id, name: dish.name, at: new Date().toLocaleString('vi-VN') },
+    ...previous.filter(item => item.id !== dish.id),
+  ])
 
   const pickDish = () => {
-    const recentIds = new Set(history.slice(0, 10).map(x => x.id))
-    const pool = filtered.filter(x => !recentIds.has(x.id))
+    const recentIds = new Set(history.slice(0, 10).map(item => item.id))
+    const pool = filtered.filter(dish => !recentIds.has(dish.id))
     const dish = randomOne(pool.length ? pool : filtered)
-    setSelected(dish); setTray([])
+    setSelected(dish)
+    setTray([])
     if (dish) remember(dish)
   }
 
   const pickTray = () => {
-    const avoid = new Set(history.slice(0, 10).map(x=>x.id))
-    const picks = chooseTray(meal,budget,people,avoid)
-    setTray(picks); setSelected(null)
+    const recentIds = new Set(history.slice(0, 10).map(item => item.id))
+    const picks = chooseTray(meal, budget, people, recentIds)
+    setTray(picks)
+    setSelected(null)
     picks.forEach(remember)
   }
 
   const generateWeek = () => {
-    const used = new Set()
-    const plan = days.map(day => {
-      const breakfast = randomOne(dishes.filter(d=>mealMatches(d,'Sáng') && avgCost(d)<=budget && !used.has(d.id)))
-      if (breakfast) used.add(breakfast.id)
-      const lunch = chooseTray('Trưa',budget,people,used); lunch.forEach(d=>used.add(d.id))
-      const dinner = chooseTray('Tối',budget,people,used); dinner.forEach(d=>used.add(d.id))
-      return {day, breakfast, lunch, dinner}
-    })
-    setWeekPlan(plan)
+    setWeekPlan(generateWeekPlan({ people, budget }))
+    setCheckedShopping({})
   }
 
-  useEffect(() => { if (!selected && tray.length === 0) pickDish() }, [])
+  useEffect(() => {
+    if (!selected && tray.length === 0) pickDish()
+  }, [])
 
-  const likedDishes = dishes.filter(d => likes.includes(d.id))
-  const trayTotal = tray.reduce((s,d)=>s+avgCost(d)*people,0)
-  const weekTotal = weekPlan.reduce((sum,d)=>sum +
-    (d.breakfast ? avgCost(d.breakfast)*people : 0) +
-    d.lunch.reduce((s,x)=>s+avgCost(x)*people,0) +
-    d.dinner.reduce((s,x)=>s+avgCost(x)*people,0), 0)
+  const likedDishes = dishes.filter(dish => likes.includes(dish.id))
+  const visibleDishes = filtered.slice(0, visibleDishCount)
+  const trayCost = tray.reduce((total, dish) => {
+    const cost = estimateDishCost(dish, people)
+    return { min: total.min + cost.min, max: total.max + cost.max }
+  }, { min: 0, max: 0 })
+  const trayCookTime = tray.reduce((sum, dish) => {
+    const recipe = getDishRecipe(dish)
+    return sum + (recipe.prepTime || 0) + (recipe.cookTime || 0)
+  }, 0)
+  const weekTotal = weekPlan.reduce((total, day) => {
+    const dishesForDay = [day.breakfast, ...(day.lunch || []), ...(day.dinner || [])].filter(Boolean)
+    return dishesForDay.reduce((sum, dish) => sum + averageDishCost(dish, people), total)
+  }, 0)
+  const plannedDishes = weekPlan.flatMap(day => [day.breakfast, ...(day.lunch || []), ...(day.dinner || [])].filter(Boolean))
+  const shopping = useMemo(() => aggregateIngredients(plannedDishes, people), [weekPlan, people])
 
-  const shopping = useMemo(()=>{
-    const map = new Map()
-    const addDish = d => dishIngredients(d,people).slice(0,2).forEach(x=>{
-      const k=x.name.toLowerCase()
-      if (!map.has(k)) map.set(k,{name:x.name, count:0})
-      map.get(k).count++
-    })
-    weekPlan.forEach(d=>{ if(d.breakfast)addDish(d.breakfast); d.lunch.forEach(addDish); d.dinner.forEach(addDish) })
-    return [...map.values()]
-  },[weekPlan,people])
+  const toggleShoppingItem = name => setCheckedShopping(previous => ({ ...previous, [name]: !previous[name] }))
 
   return <div className="app">
     <header className="site-header">
-      <div className="brand" onClick={() => setTab('Hôm nay')}>
+      <div className="brand" onClick={() => setTab('Hôm nay')} role="button" tabIndex={0}>
         <span className="logo">🍜</span><div><b>homnayangi</b><small>Đỡ phải nghĩ, ăn ngon mỗi ngày</small></div>
       </div>
-      <nav>
-        {['Hôm nay','Món ăn','7 ngày','Đi chợ','Yêu thích','Lịch sử'].map(x =>
-          <button className={tab===x ? 'active' : ''} onClick={() => setTab(x)} key={x}>{x}</button>)}
+      <nav aria-label="Điều hướng chính">
+        {tabs.map(name => <button className={tab === name ? 'active' : ''} onClick={() => setTab(name)} key={name}>{name}</button>)}
       </nav>
     </header>
 
@@ -253,78 +171,112 @@ function App() {
 
       <section className="control-card">
         <div className="field"><label>Bữa ăn</label><div className="segmented">
-          {['Sáng','Trưa','Tối','Ăn vặt','Tất cả'].map(x=><button className={meal===x?'selected':''} onClick={()=>setMeal(x)} key={x}>{x}</button>)}
+          {meals.map(item => <button className={meal === item ? 'selected' : ''} onClick={() => setMeal(item)} key={item}>{item}</button>)}
         </div></div>
         <div className="field"><label>Số người</label><div className="counter">
-          <button onClick={()=>setPeople(Math.max(1,people-1))}>−</button><b>{people}</b><button onClick={()=>setPeople(Math.min(12,people+1))}>+</button>
+          <button aria-label="Giảm số người" onClick={() => setPeople(Math.max(1, people - 1))}>−</button><b>{people}</b>
+          <button aria-label="Tăng số người" onClick={() => setPeople(Math.min(12, people + 1))}>+</button>
         </div></div>
-        <div className="field"><label>Ngân sách</label><select value={budget} onChange={e=>setBudget(Number(e.target.value))}>
-          {moneyOptions.map(x=><option key={x.max} value={x.max}>{x.label}</option>)}
+        <div className="field"><label>Ngân sách / người</label><select value={budget} onChange={event => setBudget(Number(event.target.value))}>
+          {moneyOptions.map(option => <option key={option.max} value={option.max}>{option.label}</option>)}
         </select></div>
         <div className="field"><label>Kiểu gợi ý</label><div className="segmented">
-          {['Món đơn','Mâm cơm'].map(x=><button className={mode===x?'selected':''} onClick={()=>setMode(x)} key={x}>{x}</button>)}
+          {['Món đơn', 'Mâm cơm'].map(item => <button className={mode === item ? 'selected' : ''} onClick={() => setMode(item)} key={item}>{item}</button>)}
         </div></div>
-        <button className="primary" onClick={mode==='Mâm cơm'?pickTray:pickDish}>🎲 Chọn cho tôi</button>
+        <button className="primary" onClick={mode === 'Mâm cơm' ? pickTray : pickDish}>🎲 Chọn cho tôi</button>
       </section>
 
       <section className="result-section">
         <div className="section-title"><div><span className="eyebrow">ĐỀ XUẤT HÔM NAY</span>
-          <h2>{mode==='Mâm cơm'? `Mâm cơm cho ${people} người` : 'Món dành cho bạn'}</h2></div>
-          <button className="ghost" onClick={mode==='Mâm cơm'?pickTray:pickDish}>↻ Đổi món</button></div>
-        {tray.length>0 && <div className="budget-summary"><div><span>Tổng mâm dự kiến</span><strong>{fmt(trayTotal)}</strong></div>
-          <div><span>Ngân sách bạn chọn</span><strong>{fmt(budget*people)}</strong></div>
-          <div className={trayTotal<=budget*people?'ok':'warn'}><span>Chênh lệch</span><strong>{fmt(Math.abs(budget*people-trayTotal))}</strong></div></div>}
+          <h2>{mode === 'Mâm cơm' ? `Mâm cơm cho ${people} người` : 'Món dành cho bạn'}</h2></div>
+          <button className="ghost" onClick={mode === 'Mâm cơm' ? pickTray : pickDish}>↻ Đổi món</button></div>
+        {tray.length > 0 && <>
+          <div className="budget-summary"><div><span>Tổng mâm dự kiến</span><strong>{moneyRange(trayCost)}</strong></div>
+            <div><span>Số người</span><strong>{people} người</strong></div>
+            <div><span>Thời gian nấu ước tính</span><strong>{trayCookTime} phút</strong></div></div>
+          <div className="tray-ingredients"><b>Nguyên liệu mâm cơm</b><div>{aggregateIngredients(tray, people).map(item =>
+            <span key={`${item.name}-${item.unit}`}>{item.name}: {quantityText(item.amount, item.unit)}</span>)}</div></div>
+        </>}
         {selected && <DishCard dish={selected} onLike={like} liked={likes.includes(selected.id)} people={people}/>}
-        {tray.length>0 && <div className="grid">{tray.map(d=><DishCard key={d.id} dish={d} onLike={like} liked={likes.includes(d.id)} people={people} compact/>)}</div>}
+        {tray.length > 0 && <div className="grid">{tray.map(dish => <DishCard key={dish.id} dish={dish} onLike={like} liked={likes.includes(dish.id)} people={people} compact/>)}</div>}
       </section>
     </>}
 
     {tab === 'Món ăn' && <section className="page">
       <div className="section-title"><div><span className="eyebrow">KHO MÓN</span><h2>1.000 món Việt</h2></div></div>
       <div className="catalog-tools">
-        <input className="search" placeholder="Tìm phở, bún, gà, cá, đặc sản..." value={search} onChange={e=>setSearch(e.target.value)} />
-        <select value={meal} onChange={e=>setMeal(e.target.value)}>{['Tất cả','Sáng','Trưa','Tối','Ăn vặt'].map(x=><option key={x}>{x}</option>)}</select>
+        <input className="search" placeholder="Tìm phở, bún, gà, cá, đặc sản..." value={search} onChange={event => setSearch(event.target.value)} />
+        <select aria-label="Lọc theo bữa" value={meal} onChange={event => setMeal(event.target.value)}>{meals.map(item => <option key={item}>{item}</option>)}</select>
+        <select aria-label="Ngân sách tối đa mỗi người" value={budget} onChange={event => setBudget(Number(event.target.value))}>
+          {moneyOptions.map(option => <option key={option.max} value={option.max}>{option.label}</option>)}
+        </select>
+        <select aria-label="Khoảng giá mỗi người" value={priceRange} onChange={event => setPriceRange(event.target.value)}>
+          <option value="Tất cả">Mọi khoảng giá</option>
+          <option value="0-30000">≤ 30.000đ/người</option>
+          <option value="30000-60000">30.000–60.000đ/người</option>
+          <option value="60000-100000">60.000–100.000đ/người</option>
+          <option value="100000+">&gt; 100.000đ/người</option>
+        </select>
       </div>
-      <div className="grid">{filtered.slice(0,150).map(d=><DishCard key={d.id} dish={d} onLike={like} liked={likes.includes(d.id)} people={people} compact/>)}</div>
-      <p className="center muted">Đang hiển thị {Math.min(filtered.length,150)} / {filtered.length} món phù hợp.</p>
+      <div className="method-filter" role="group" aria-label="Lọc theo phương pháp chế biến">
+        {COOKING_METHOD_FILTERS.map(method => <button type="button" className={cookingMethod === method ? 'selected' : ''}
+          aria-pressed={cookingMethod === method} onClick={() => setCookingMethod(method)} key={method}>{method}</button>)}
+      </div>
+      <div className="grid">{visibleDishes.map(dish => <DishCard key={dish.id} dish={dish} onLike={like} liked={likes.includes(dish.id)} people={people} compact/>)}</div>
+      <p className="center muted">Đang hiển thị {visibleDishes.length} / {filtered.length} món phù hợp.</p>
+      {visibleDishes.length < filtered.length && <div className="load-more"><button className="ghost" onClick={() => setVisibleDishCount(count => count + 150)}>Xem thêm {Math.min(150, filtered.length - visibleDishes.length)} món</button></div>}
     </section>}
 
     {tab === '7 ngày' && <section className="page">
       <div className="section-title"><div><span className="eyebrow">THỰC ĐƠN TUẦN</span><h2>Ăn gì trong 7 ngày?</h2></div>
-        <button className="primary" onClick={generateWeek}>{weekPlan.length?'↻ Tạo lại':'✨ Tạo thực đơn'}</button></div>
-      <p className="muted intro">Theo {people} người, ngân sách tối đa {fmt(budget)}/người/bữa. Hệ thống hạn chế lặp món trong tuần.</p>
+        <button className="primary" onClick={generateWeek}>{weekPlan.length ? '↻ Tạo lại' : '✨ Tạo thực đơn'}</button></div>
+      <p className="muted intro">Theo {people} người, ngân sách tối đa {formatMoney(budget)}/người/bữa. Thực đơn cố gắng xen kẽ nhóm đạm và tránh lặp món.</p>
       {weekPlan.length ? <>
-        <div className="week-total"><span>Chi phí ước tính cả tuần</span><strong>{fmt(weekTotal)}</strong></div>
-        <div className="week-grid">{weekPlan.map(d=><article className="day-card" key={d.day}>
-          <h3>{d.day}</h3>
-          <div><b>🌅 Sáng</b><span>{d.breakfast?.name || '—'}</span></div>
-          <div><b>☀️ Trưa</b><span>{d.lunch.map(x=>x.name).join(' · ') || '—'}</span></div>
-          <div><b>🌙 Tối</b><span>{d.dinner.map(x=>x.name).join(' · ') || '—'}</span></div>
-        </article>)}</div>
+        <div className="week-total"><span>Chi phí ước tính cả tuần · {people} người<br/><small>{formatMoney(weekTotal / people)} / người / tuần</small></span><strong>{formatMoney(weekTotal)}</strong></div>
+        <div className="week-grid">{weekPlan.map((day, dayIndex) => {
+          const dayDishes = [day.breakfast, ...(day.lunch || []), ...(day.dinner || [])].filter(Boolean)
+          const dayTotal = dayDishes.reduce((sum, dish) => sum + averageDishCost(dish, people), 0)
+          const renderRecipe = dish => dish && <details className="week-recipe" key={dish.id}>
+            <summary>{dish.name}<span>{moneyRange(estimateDishCost(dish, people))}</span></summary>
+            <RecipeDetail dish={dish} people={people}/>
+          </details>
+          return <article className="day-card" key={day.day || dayNames[dayIndex]}>
+            <h3>{day.day || dayNames[dayIndex]}<strong>{formatMoney(dayTotal)}</strong></h3>
+            <div className="day-meal"><b>🌅 Sáng</b>{renderRecipe(day.breakfast) || <span>—</span>}</div>
+            <div className="day-meal"><b>☀️ Trưa</b>{day.lunch?.length ? day.lunch.map(renderRecipe) : <span>—</span>}</div>
+            <div className="day-meal"><b>🌙 Tối</b>{day.dinner?.length ? day.dinner.map(renderRecipe) : <span>—</span>}</div>
+          </article>
+        })}</div>
       </> : <div className="empty">Bấm “Tạo thực đơn” để web lên thực đơn cả tuần cho bạn.</div>}
     </section>}
 
     {tab === 'Đi chợ' && <section className="page">
       <div className="section-title"><div><span className="eyebrow">DANH SÁCH MUA</span><h2>Đi chợ cho cả tuần</h2></div>
-        <button className="ghost" onClick={()=>setTab('7 ngày')}>← Xem thực đơn</button></div>
+        <button className="ghost" onClick={() => setTab('7 ngày')}>← Xem thực đơn</button></div>
       {weekPlan.length ? <div className="shopping-card">
-        <p className="muted">Gộp từ thực đơn 7 ngày cho {people} người. Định lượng là gợi ý, nên điều chỉnh theo sức ăn thực tế.</p>
-        <div className="shopping-list">{shopping.map((x,i)=><label key={i}><input type="checkbox"/><span>{x.name}</span><em>xuất hiện {x.count} bữa</em></label>)}</div>
+        <p className="muted">Gộp nguyên liệu và định lượng từ thực đơn 7 ngày cho {people} người. Lượng mua chỉ là dự kiến.</p>
+        <div className="shopping-list">{shopping.map(item => {
+          const key = `${item.name}|${item.unit}`
+          return <label className={checkedShopping[key] ? 'checked' : ''} key={key}>
+            <input type="checkbox" checked={Boolean(checkedShopping[key])} onChange={() => toggleShoppingItem(key)}/>
+            <span>{item.name}<small>{quantityText(item.amount, item.unit)}</small></span>
+          </label>
+        })}</div>
       </div> : <div className="empty">Hãy tạo “Thực đơn 7 ngày” trước, danh sách đi chợ sẽ tự xuất hiện ở đây.</div>}
     </section>}
 
     {tab === 'Yêu thích' && <section className="page">
       <div className="section-title"><div><span className="eyebrow">ĐÃ LƯU</span><h2>Món yêu thích</h2></div></div>
-      {likedDishes.length ? <div className="grid">{likedDishes.map(d=><DishCard key={d.id} dish={d} onLike={like} liked people={people}/>)}</div> : <div className="empty">Chưa có món yêu thích.</div>}
+      {likedDishes.length ? <div className="grid">{likedDishes.map(dish => <DishCard key={dish.id} dish={dish} onLike={like} liked people={people}/>)}</div> : <div className="empty">Chưa có món yêu thích.</div>}
     </section>}
 
     {tab === 'Lịch sử' && <section className="page">
       <div className="section-title"><div><span className="eyebrow">GẦN ĐÂY</span><h2>Lịch sử món đã chọn</h2></div>
-        <button className="ghost" onClick={()=>setHistory([])}>Xóa lịch sử</button></div>
-      <div className="history">{history.map(x=><div key={`${x.id}-${x.at}`}><b>{x.name}</b><span>{x.at}</span></div>)}</div>
+        <button className="ghost" onClick={() => setHistory([])}>Xóa lịch sử</button></div>
+      {history.length ? <div className="history">{history.map(item => <div key={`${item.id}-${item.at}`}><b>{item.name}</b><span>{item.at}</span></div>)}</div> : <div className="empty">Chưa có món trong lịch sử.</div>}
     </section>}
 
-    <footer>homnayangi · Database {dishes.length.toLocaleString('vi-VN')} món · Ảnh tự lấy từ Wikimedia khi có</footer>
+    <footer>homnayangi · Database {dishes.length.toLocaleString('vi-VN')} món · Ảnh chỉ hiện khi có metadata xác minh đúng món</footer>
   </div>
 }
 
