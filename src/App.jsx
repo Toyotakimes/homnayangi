@@ -79,25 +79,57 @@ function cookingSteps(dish) {
   ]
 }
 
+function normalizeText(text='') {
+  return text
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/đ/g, 'd')
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+function imageTitleMatchesDish(title, dishName) {
+  const stop = new Set(['mon','viet','nam','kieu','va','voi','nau','xao','chien','ran','hap','luoc','nuong','kho','rim'])
+  const dishTokens = normalizeText(dishName).split(' ').filter(x => x.length > 1 && !stop.has(x))
+  const titleText = normalizeText(title)
+  if (!dishTokens.length) return false
+  const hits = dishTokens.filter(t => titleText.includes(t)).length
+  if (dishTokens.length === 1) return hits === 1
+  return hits >= Math.min(2, Math.ceil(dishTokens.length * 0.6))
+}
+
 async function lookupWikiImage(dish) {
-  const key = 'foodimg_' + dish.id
+  // v2 intentionally ignores the old cache because some v1 results were unrelated images.
+  const key = 'foodimg_v2_' + dish.id
   const saved = localStorage.getItem(key)
   if (saved) return saved === 'NONE' ? '' : saved
-  const searches = [dish.name, dish.imageKeyword].filter(Boolean)
+
+  const searches = [
+    `intitle:"${dish.name}" ${dish.name}`,
+    `"${dish.name}" ẩm thực Việt Nam`
+  ]
+
   for (const q of searches) {
     try {
       const url = 'https://vi.wikipedia.org/w/api.php?action=query&generator=search&gsrsearch=' +
-        encodeURIComponent(q) + '&gsrlimit=4&prop=pageimages&piprop=thumbnail&pithumbsize=900&format=json&origin=*'
+        encodeURIComponent(q) +
+        '&gsrlimit=8&prop=pageimages&piprop=thumbnail&pithumbsize=900&format=json&origin=*'
       const res = await fetch(url)
       const json = await res.json()
       const pages = Object.values(json?.query?.pages || {})
-      const found = pages.find(p => p.thumbnail?.source)
+      const found = pages.find(p =>
+        p.thumbnail?.source &&
+        imageTitleMatchesDish(p.title || '', dish.name)
+      )
       if (found?.thumbnail?.source) {
         localStorage.setItem(key, found.thumbnail.source)
         return found.thumbnail.source
       }
     } catch {}
   }
+
   localStorage.setItem(key, 'NONE')
   return ''
 }
