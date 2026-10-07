@@ -1,0 +1,20 @@
+{
+  "deploy": 2,
+  "rollbackTarget": "ba24969d27557ad6c6ad9b570d4bf0e02864f6ea",
+  "sourceFilesMatch": [
+    "src/App.jsx",
+    "src/data/dishes.json",
+    "src/styles.css",
+    "src/utils/dishImageResolver.js",
+    "src/utils/dishImageResolver.test.js"
+  ],
+  "onlyAppDifference": "version import/footer",
+  "tested": [
+    "home suggestion",
+    "catalog",
+    "weekly planner",
+    "shopping checklist persists",
+    "desktop/tablet/mobile"
+  ],
+  "consoleErrors": []
+}

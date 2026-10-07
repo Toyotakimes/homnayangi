@@ -4,7 +4,7 @@ export function normalizeDishName(value = '') {
     .toLowerCase().replace(/đ/g, 'd').replace(/[^a-z0-9]+/g, ' ').trim()
 }
 
-export const IMAGE_POLICY_VERSION = 6
+export const IMAGE_POLICY_VERSION = 5
 const pending = new Map()
 const memory = new Map()
 const HIT_TTL = 7 * 24 * 60 * 60 * 1000
@@ -46,25 +46,18 @@ export function getAvailableDishImage(dish) {
     || (dish.image?.source === 'themealdb' ? verifyMealImage(dish, dish.image.evidence) : null)
   if (verified) return verified
   const current = existingImage(dish.image, dish.imageUrl)
-  if (current && verifiedStoredImage(dish, current)) return verifiedStoredImage(dish, current)
-  for (const version of [2, 3, 4, 5]) {
+  if (current) return current
+  for (const version of [2, 3, 4]) {
     const old = existingImage(readCache(`foodimg_v${version}_${dish.id}`))
     if (old) {
       writeCache(`foodimg_migrated_${dish.id}`, { image: old })
-      const verifiedOld = verifiedStoredImage(dish, old)
-      if (verifiedOld) return verifiedOld
+      return old
     }
   }
   const migrated = existingImage(readCache(`foodimg_migrated_${dish.id}`)?.image)
-  if (migrated && verifiedStoredImage(dish, migrated)) return verifiedStoredImage(dish, migrated)
+  if (migrated) return migrated
   const cached = readCache(dishImageCacheKey(dish))
-  return verifiedStoredImage(dish, existingImage(cached?.image))
-}
-
-function verifiedStoredImage(dish, image) {
-  if (!image) return null
-  if (image.source === 'themealdb') return verifyMealImage(dish, image.evidence)
-  return manualImage({ ...dish, image })
+  return existingImage(cached?.image)
 }
 
 export function verifyMealImage(dish, meal) {

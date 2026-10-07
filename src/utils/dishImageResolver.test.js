@@ -11,18 +11,16 @@ test('preserves cooking methods and dish variants', () => {
     assert.equal(verifyMealImage({ name }, meal), null)
   }
 })
-test('keeps unverified URLs in data but refuses to display them', async () => {
+test('preserves existing unverified URLs before any cache or network search', async () => {
   const original = globalThis.fetch
   globalThis.fetch = () => { throw new Error('Must not search') }
   try {
-    const dish = { id: 'existing', name: 'Món cũ', image: 'https://example.com/old.jpg' }
-    assert.equal(await resolveDishImage(dish), null)
-    assert.equal(dish.image, 'https://example.com/old.jpg')
-    assert.equal(getAvailableDishImage({ imageUrl: '/homnayangi/food.jpg' }), null)
+    assert.equal((await resolveDishImage({ id: 'existing', name: 'Món cũ', image: 'https://example.com/old.jpg' })).url, 'https://example.com/old.jpg')
+    assert.equal(getAvailableDishImage({ imageUrl: '/homnayangi/food.jpg' }).url, '/homnayangi/food.jpg')
     assert.equal(getAvailableDishImage({ image: 'javascript:alert(1)' }), null)
   } finally { globalThis.fetch = original }
 })
-test('preserves legacy cache entries without treating unverified URLs as dish photos', async () => {
+test('migrates v2/v3/v4 raw URLs and objects without deleting or changing verification', async () => {
   const originalStorage = globalThis.localStorage
   const originalFetch = globalThis.fetch
   const values = new Map()
@@ -35,7 +33,7 @@ test('preserves legacy cache entries without treating unverified URLs as dish ph
       const value = version === 2 ? 'https://example.com/old.jpg' : JSON.stringify({ url: 'https://example.com/old.jpg', verified: false })
       values.set(key, value)
       values.set(dishImageCacheKey(dish), JSON.stringify({ image: null, expires: Date.now() + 99999, version: 5 }))
-      assert.equal(await resolveDishImage(dish), null)
+      assert.equal((await resolveDishImage(dish)).url, 'https://example.com/old.jpg')
       assert.equal(values.get(key), value)
       assert.ok(values.has(`foodimg_migrated_${dish.id}`))
     }

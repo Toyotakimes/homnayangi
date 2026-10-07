@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "node scripts/build-deploy.mjs",
-    "test": "node scripts/logic.test.mjs && node src/utils/dishImageResolver.test.js",
+    "test": "node src/utils/dishImageResolver.test.js",
     "preview": "vite preview"
   },
   "dependencies": {
