@@ -1,0 +1,24 @@
+{
+  "total": 1000,
+  "missingPrices": 0,
+  "missingIngredients": 171,
+  "missingMethods": 0,
+  "genericMethods": 324,
+  "missingCategoryOrMeal": 0,
+  "missingCookingTime": 1000,
+  "validImages": 8,
+  "placeholders": 992,
+  "imageCacheVersion": "2026-10-08-v2",
+  "enrichedRecipes": {
+    "curated": 18,
+    "estimated": 982
+  },
+  "cases": {
+    "lunch80k": 523,
+    "snacks80k": 59,
+    "searchGa": 203,
+    "searchBanh": 67
+  },
+  "imageDiscovery": "Exact Commons file-title lookup for all 1,000 records; 15 of 25 metadata batches returned HTTP 429. Unverified records retain placeholders.",
+  "trayPricing": "Estimates are allocated within the existing min–max ranges, starting at their lower bounds and moving toward midpoints while keeping the combined estimate within budget. These are estimates, not guaranteed maximum market prices."
+}

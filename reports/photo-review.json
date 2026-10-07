@@ -1,0 +1,148 @@
+[
+  {
+    "name": "Miến cua",
+    "approved": false,
+    "reason": "Ảnh miến xào, không khớp nhóm món nước trong database."
+  },
+  {
+    "name": "Bún ốc",
+    "approved": true,
+    "source": {
+      "url": "/images/bun-oc.jpg",
+      "title": "Bún ốc",
+      "description": "Tomato and snail based noodle soup topped with scallions",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:B%C3%BAn_%E1%BB%91c.jpg",
+      "author": "Thang Nguyen from Nottingham, United Kingdom",
+      "license": "CC BY-SA 2.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+      "kind": "dish-photo",
+      "verified": true,
+      "reviewedAt": "2026-10-08",
+      "originalUrl": "https://upload.wikimedia.org/wikipedia/commons/3/37/B%C3%BAn_%E1%BB%91c.jpg"
+    }
+  },
+  {
+    "name": "Miến gà",
+    "approved": true,
+    "source": {
+      "url": "/images/mien-ga.jpg",
+      "title": "Miến gà",
+      "description": "Cellophane noodles with chicken.",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Mi%E1%BA%BFn_g%C3%A0.jpg",
+      "author": "Thang Nguyen from Nottingham, United Kingdom",
+      "license": "CC BY-SA 2.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+      "kind": "dish-photo",
+      "verified": true,
+      "reviewedAt": "2026-10-08",
+      "originalUrl": "https://upload.wikimedia.org/wikipedia/commons/f/f5/Mi%E1%BA%BFn_g%C3%A0.jpg"
+    }
+  },
+  {
+    "name": "Cháo lòng",
+    "approved": true,
+    "source": {
+      "url": "/images/chao-long.jpg",
+      "title": "Cháo lòng",
+      "description": "Congee made with pork offal and black pudding",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Ch%C3%A1o_l%C3%B2ng.jpg",
+      "author": "hongnhung106",
+      "license": "CC BY 2.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+      "kind": "dish-photo",
+      "verified": true,
+      "reviewedAt": "2026-10-08",
+      "originalUrl": "https://upload.wikimedia.org/wikipedia/commons/8/82/Ch%C3%A1o_l%C3%B2ng.jpg"
+    }
+  },
+  {
+    "name": "Bún mắm",
+    "approved": true,
+    "source": {
+      "url": "/images/bun-mam.jpg",
+      "title": "Bún mắm",
+      "description": "Bún mắm is a vermicelli noodle soup with a heavy shrimp paste broth. It's supposed to be pretty funky, as you would expect if you've ever used shrimp paste as an ingredient. Here, Yen Ha serves it fish steaks (small enough to be something like a trout) and eggplant as well as nice pieces of pork and and few shrimp. The noodles were served off to the side like how Thai places serve khanom jiin.\n\n@ Yen Ha",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:B%C3%BAn_m%E1%BA%AFm.jpg",
+      "author": "SauceSupreme",
+      "license": "CC BY 2.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+      "kind": "dish-photo",
+      "verified": true,
+      "reviewedAt": "2026-10-08",
+      "originalUrl": "https://upload.wikimedia.org/wikipedia/commons/8/80/B%C3%BAn_m%E1%BA%AFm.jpg"
+    }
+  },
+  {
+    "name": "Bánh giò",
+    "approved": true,
+    "source": {
+      "url": "/images/banh-gio.jpg",
+      "title": "Bánh giò",
+      "description": "pyramid shaped rice dough dumplings filled with pork, shallot, and wood ear mushroom wrapped in banana leaf",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:B%C3%A1nh_gi%C3%B2.jpg",
+      "author": "Thang Nguyen from Nottingham, United Kingdom",
+      "license": "CC BY-SA 2.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+      "kind": "dish-photo",
+      "verified": true,
+      "reviewedAt": "2026-10-08",
+      "originalUrl": "https://upload.wikimedia.org/wikipedia/commons/9/91/B%C3%A1nh_gi%C3%B2.jpg"
+    }
+  },
+  {
+    "name": "Cơm tấm sườn bì chả",
+    "approved": true,
+    "source": {
+      "url": "/images/com-tam-suon-bi-cha.jpg",
+      "title": "Cơm tấm sườn bì chả",
+      "description": "Broken Rice - Thien An, Footscray AUD7\n\nLook at how red the lemongrass pork chop is! Does that look natural to you? At least it tasted ok.",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:C%C6%A1m_t%E1%BA%A5m_s%C6%B0%E1%BB%9Dn_b%C3%AC_ch%E1%BA%A3.jpg",
+      "author": "Alpha from Melbourne, Australia",
+      "license": "CC BY-SA 2.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+      "kind": "dish-photo",
+      "verified": true,
+      "reviewedAt": "2026-10-08",
+      "originalUrl": "https://upload.wikimedia.org/wikipedia/commons/8/81/C%C6%A1m_t%E1%BA%A5m_s%C6%B0%E1%BB%9Dn_b%C3%AC_ch%E1%BA%A3.jpg"
+    }
+  },
+  {
+    "name": "Bánh tráng cuốn thịt heo",
+    "approved": false,
+    "reason": "Ảnh có bàn tay người và nhãn chữ trong khung; giữ placeholder."
+  },
+  {
+    "name": "Thắng cố",
+    "approved": true,
+    "source": {
+      "url": "/images/thang-co.jpg",
+      "title": "Thắng cố",
+      "description": "Seeing bits of boiled beef, goat that are sliced up to top off a bowl of noodles, I stumbled on what I thought was an offal stew of beef or goat. I thought the bits of tripe looked familiar enough, and the brownish skin looked like what you'd find in a Chinese-style goat hotpot stew.\nAsking the man behind the pot if it was \"thit de\" (goat in Vietnamese) was met with much uninteligible chatter and hand-waving, beckoning me to sit down for a bowl. I put it down to the fact that he was Hmong and perhaps didn't speak much Vietnamese. I managed to get the price, and VND30000 / AUD2 / USD1.50 seemed reasonable.\nChowing down on the intestines and tripe, I was quite happy with the flavours even though it was a simple dish. The minerally taste of the offal was mild and everything tasted fresh. Seeing me enjoy it, Julia decided to taste a bit of the meat. As soon as she did, that was what gave it away.\nI had a taste, and sure enough, it wasn't goat. It had a sweet flavour probably closest to wild boar, but stronger gameyness.\nWhen one of the waitresses walked past, I asked again if it was \"thit de\". She responded with \"thit cho\". yep. dog.\nI think I tried to have a little bit more, but we had to leave half the bowl untouched.\nSuffice to say, lunch and dinner was vegetables and rice! :P\n\nUpdate 2010.04.29: I saw locals selling dog in the livestock area, but this &lt;a href=\"http://www.austinbushphotography.com/2010/04/dog-trucks.html\" rel=\"nofollow\"&gt;dog could have come from Thailand, via Laos&lt;/a&gt;!",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Th%E1%BA%AFng_c%E1%BB%91.jpg",
+      "author": "Alpha",
+      "license": "CC BY-SA 2.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+      "kind": "dish-photo",
+      "verified": true,
+      "reviewedAt": "2026-10-08",
+      "originalUrl": "https://upload.wikimedia.org/wikipedia/commons/8/80/Th%E1%BA%AFng_c%E1%BB%91.jpg"
+    }
+  },
+  {
+    "name": "Bánh tiêu",
+    "approved": true,
+    "source": {
+      "url": "/images/banh-tieu.jpg",
+      "title": "Bánh tiêu",
+      "description": "Bánh tiêu",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:B%C3%A1nh_ti%C3%AAu.jpg",
+      "author": "Baoothersks",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "kind": "dish-photo",
+      "verified": true,
+      "reviewedAt": "2026-10-08",
+      "originalUrl": "https://upload.wikimedia.org/wikipedia/commons/7/70/B%C3%A1nh_ti%C3%AAu.jpg"
+    }
+  }
+]

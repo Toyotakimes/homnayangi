@@ -1,0 +1,17 @@
+{
+  "checks": [
+    "CASE 1: lunch list, next dish and load more",
+    "CASE 2: snack list",
+    "CASE 3: dinner tray for four",
+    "CASE 4/5: accented, unaccented and case-insensitive search",
+    "CASE 6: Bánh tiêu loads its reviewed local photo with new cache version",
+    "favorites persist after reload",
+    "latest GitHub weekly planner and shopping checklist retained and persisted",
+    "desktop: 3 columns, no horizontal overflow",
+    "tablet: 2 columns, no horizontal overflow",
+    "mobile: 1 columns, no horizontal overflow",
+    "small-mobile: 1 columns, no horizontal overflow",
+    "broken primary image falls back to placeholder without a retry loop (forced failure test)"
+  ],
+  "consoleErrors": []
+}
