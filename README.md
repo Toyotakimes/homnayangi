@@ -21,7 +21,19 @@ npm run dev
 Mở địa chỉ Vite hiển thị trong Terminal (thường là http://localhost:5173).
 
 ## Ảnh món ăn
-Ảnh không lấy ngẫu nhiên và không scrape Google Images. Khi thẻ món được xem, ứng dụng tìm theo thứ tự trên Wikimedia Commons rồi Openverse bằng tên món (bỏ dấu); Openverse chỉ nhận tiêu đề khớp toàn bộ từ khóa món, tags xác nhận ngữ cảnh thực phẩm/nguyên liệu và license `CC BY`, `CC BY-SA`, `CC0` hoặc Public Domain. Ảnh khác, tag/logo/phong cảnh không phù hợp, license không rõ hoặc confidence dưới 80 sẽ dùng placeholder. Ảnh được ghi nguồn/creator/license và liên kết trang gốc; không tải/copy file về repository. Search cache dùng `foodimg_v4_<dish.id>` và negative cache hết hạn sau 24 giờ. Openverse anonymous API có rate limit; ảnh được tìm khi người dùng xem từng món, không thể bảo đảm phủ đủ 1.000 món trong một lượt. Muốn tự nhập ảnh cần metadata xác minh, `image.verified: true` và confidence >=80.
+Ảnh bổ sung nằm trong `src/data/dish-images.json`; dữ liệu gốc 1.000 món được giữ nguyên. File ảnh được lưu ở `public/images/dishes`, tên chứa mã món và hash nội dung. Vite thêm base `/homnayangi/` khi hiển thị và copy file vào bản build. Không dùng cache ảnh v2–v5 chưa xác minh. Khi ảnh tải lỗi, ứng dụng dùng hình mặc định, chặn URL lỗi và ghi nhận trong `homnayangi_image_issues_v6` của localStorage.
+
+`npm run audit:images` đối chiếu toàn bộ tên món không dấu với kho công thức của các nguồn đã cấu hình, kiểm tra metadata, ít nhất hai từ khóa khi tên có hai từ trở lên, tải và kiểm tra file ảnh, chống dùng lại cùng file cho món khác. Ảnh mới có `visualReview: pending` và chưa được hiển thị cho đến khi kiểm tra trực quan. Ảnh bị loại được ghi ở `src/data/dish-images-rejected.json`. Không sử dụng nguồn Wikipedia/Wikimedia.
+
+Kết quả hiện tại: 108 ảnh đã đối chiếu trực quan; 892 món còn thiếu ảnh thực tế phù hợp. Hình mặc định không được tính là ảnh món ăn hợp lệ. Báo cáo từng món ở `reports/dish-image-audit.json`. Nguồn công thức được ghi cạnh ảnh và trong manifest.
+
+## Kiểm tra trước khi triển khai
+- `npm test`: kiểm thử tìm kiếm và cache ảnh.
+- `npx playwright install chromium`: chuẩn bị trình duyệt kiểm thử.
+- `npm run test:website`: build và kiểm tra danh sách đủ 1.000 món, tìm có dấu/không dấu/gần đúng, tải thêm 20 món, xem công thức, chọn món, tính tương thích điện thoại, ảnh dưới đường dẫn GitHub Pages và bảo toàn dữ liệu gốc.
+- `npm run audit:local-images`: giải mã toàn bộ ảnh và tạo bảng ảnh để đối chiếu.
+
+Báo cáo kiểm thử bản build ở `reports/website-verification.json`. Kiểm tra bản build local không thay thế kiểm tra website sau triển khai.
 
 ## Nâng cấp nên làm tiếp
 1. Backend + tài khoản người dùng.

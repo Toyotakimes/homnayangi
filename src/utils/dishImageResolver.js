@@ -4,7 +4,7 @@ export function normalizeDishName(value = '') {
     .toLowerCase().replace(/đ/g, 'd').replace(/[^a-z0-9]+/g, ' ').trim()
 }
 
-export const IMAGE_POLICY_VERSION = 5
+export const IMAGE_POLICY_VERSION = 6
 const pending = new Map()
 const memory = new Map()
 const HIT_TTL = 7 * 24 * 60 * 60 * 1000
@@ -28,36 +28,32 @@ function safeUrl(value) {
   } catch { return false }
 }
 
-function existingImage(value, fallbackUrl = '') {
-  let raw = value
-  if (typeof raw === 'string') {
-    try { raw = JSON.parse(raw) } catch { raw = { url: raw } }
-  }
-  if (typeof raw === 'string') raw = { url: raw }
-  if (!raw || typeof raw !== 'object') raw = { url: fallbackUrl }
-  if (raw.status === 'miss') return null
-  const url = raw.url || raw.imageUrl || (typeof raw.image === 'string' ? raw.image : raw.image?.url) || fallbackUrl
-  return safeUrl(url) ? { ...raw, url } : null
+// Old caches remain stored, but cannot supply an unverified or expired image.
+function approvedImage(dish, image) {
+  if (!image || !safeUrl(image.url)) return null
+  if (image.source === 'themealdb') return verifyMealImage(dish, image.evidence)
+  if (image.source === 'recipe-page' && image.visualReview === 'approved' && image.verified === true && image.confidence >= 80
+    && /^[a-f0-9]{64}$/.test(image.sha256 || '') && image.width >= 400 && image.height >= 300
+    && [image.title, image.alt, image.pageTitle].every(text =>
+      (' ' + normalizeDishName(text) + ' ').includes(' ' + normalizeDishName(dish.name.replace(/,\s*canh$/i, '')) + ' '))) return image
+  return manualImage({ ...dish, image })
 }
-
-// Preserve legacy entries; copying is additive and does not assert verification.
+function blockedUrl(dish, url) {
+  return Boolean(readCache('foodimg_failed_v' + IMAGE_POLICY_VERSION + '_' + dish.id)?.urls?.includes(url))
+}
 export function getAvailableDishImage(dish) {
-  const verified = manualImage(dish)
-    || (dish.image?.source === 'themealdb' ? verifyMealImage(dish, dish.image.evidence) : null)
-  if (verified) return verified
-  const current = existingImage(dish.image, dish.imageUrl)
-  if (current) return current
-  for (const version of [2, 3, 4]) {
-    const old = existingImage(readCache(`foodimg_v${version}_${dish.id}`))
-    if (old) {
-      writeCache(`foodimg_migrated_${dish.id}`, { image: old })
-      return old
-    }
-  }
-  const migrated = existingImage(readCache(`foodimg_migrated_${dish.id}`)?.image)
-  if (migrated) return migrated
+  const current = approvedImage(dish, dish.image)
+  if (current && !blockedUrl(dish, current.url)) return current
   const cached = readCache(dishImageCacheKey(dish))
-  return existingImage(cached?.image)
+  if (cached?.version !== IMAGE_POLICY_VERSION || cached.expires <= Date.now()) return null
+  const image = approvedImage(dish, cached.image)
+  return image && !blockedUrl(dish, image.url) ? image : null
+}
+export function recordDishImageIssue(dish, reason, url = '') {
+  const key = 'homnayangi_image_issues_v' + IMAGE_POLICY_VERSION
+  const previous = readCache(key)
+  const issues = previous && typeof previous === 'object' ? previous : {}
+  writeCache(key, { ...issues, [dish.id]: { id: dish.id, name: dish.name, reason, url, at: new Date().toISOString() } })
 }
 
 export function verifyMealImage(dish, meal) {
@@ -114,7 +110,12 @@ function writeCache(key, entry) {
   memory.set(key, entry)
   try { localStorage.setItem(key, JSON.stringify(entry)) } catch { /* storage is optional */ }
 }
-export function invalidateDishImage(dish) {
+export function invalidateDishImage(dish, url) {
+  const failed = url || getAvailableDishImage(dish)?.url
+  const key = 'foodimg_failed_v' + IMAGE_POLICY_VERSION + '_' + dish.id
+  const previous = readCache(key)?.urls || []
+  if (failed) writeCache(key, { urls: [...new Set([...previous, failed])].slice(-20) })
+  recordDishImageIssue(dish, 'load-error', failed)
   writeCache(dishImageCacheKey(dish), { version: IMAGE_POLICY_VERSION, image: null, expires: Date.now() + ERROR_TTL })
 }
 
@@ -122,25 +123,26 @@ export async function resolveDishImage(dish) {
   const available = getAvailableDishImage(dish)
   if (available) return available
   const key = dishImageCacheKey(dish)
-  const owned = manualImage(dish)
+  const owned = approvedImage(dish, dish.image)
   const cached = readCache(key)
   if (cached?.version === IMAGE_POLICY_VERSION && cached.expires > Date.now()) {
     const image = cached.image
     if (!image) return null
     if (image.source === 'themealdb' && verifyMealImage(dish, image.evidence)) return verifyMealImage(dish, image.evidence)
-    if (owned && image.url === owned.url) return owned
+    if (owned && image.url === owned.url && !blockedUrl(dish, image.url)) return owned
   }
-  if (owned) return owned
+  if (owned && !blockedUrl(dish, owned.url)) return owned
   if (pending.has(key)) return pending.get(key)
   const task = (async () => {
     try {
       for (const provider of providers) {
         const image = await provider(dish)
-        if (image) {
+        if (image && !blockedUrl(dish, image.url)) {
           writeCache(key, { version: IMAGE_POLICY_VERSION, image, expires: Date.now() + HIT_TTL })
           return image
         }
       }
+      recordDishImageIssue(dish, 'missing-verified-image')
       writeCache(key, { version: IMAGE_POLICY_VERSION, image: null, expires: Date.now() + MISS_TTL })
     } catch {
       writeCache(key, { version: IMAGE_POLICY_VERSION, image: null, expires: Date.now() + ERROR_TTL })

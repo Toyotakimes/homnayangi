@@ -1,0 +1,56 @@
+{
+  "https://bepmina.vn/wp-content/uploads/2021/08/cach-lam-pho-ga-tron-ngon.jpeg": {
+    "id": 4,
+    "url": "images/dishes/4-7589f1c29e53.jpg",
+    "sha256": "7589f1c29e5362eb759966cc5e13cfb7a2f29225bbd493fec0296c70e29d9165",
+    "reason": "Different dish variant: dry mixed pho instead of chicken pho"
+  },
+  "https://cookbeo.com/media/2021/04/banh-trang-cuon-thit-heo/banh-trang-cuon-thit-heo-5x7.jpg": {
+    "id": 115,
+    "url": "images/dishes/115-deb639da9d77.jpg",
+    "sha256": "deb639da9d77eea58b6415026014740c4245a00ee1c22fbab965f9e713cc438a",
+    "reason": "Image framing does not clearly show the finished dish"
+  },
+  "https://bepmina.vn/wp-content/uploads/2023/03/mon-xoi-ngu-sac-nguoi-tay.jpeg": {
+    "id": 190,
+    "url": "images/dishes/190-9936831c0a7a.jpg",
+    "sha256": "9936831c0a7a65cd779479a17e823a162ef37fad594623a1b8a7edca8173c3e9",
+    "reason": "People are the main subject"
+  },
+  "https://bepmina.vn/wp-content/uploads/2021/05/lam-ngo-chien-bo.jpeg": {
+    "id": 222,
+    "url": "images/dishes/222-c459b1142199.jpg",
+    "sha256": "c459b11421994879a66cbc5694af0e7ff0c31a20134d3297393a954a7fa6ea5b",
+    "reason": "Corn coated in raw flour: preparation stage"
+  },
+  "https://bepmina.vn/wp-content/uploads/2021/04/nem-nuong-thanh-hoaa.jpeg": {
+    "id": 241,
+    "url": "images/dishes/241-141608950000.jpg",
+    "sha256": "1416089500006ea3779a3c7a160314b74b31a60f10d1ce0253e3c42dd809fafe",
+    "reason": "People preparing food, not the finished dish"
+  },
+  "https://bepmina.vn/wp-content/uploads/2021/08/tron-bot-banh-khoai-lang-soi.jpeg": {
+    "id": 253,
+    "url": "images/dishes/253-497d3cc75fd9.jpg",
+    "sha256": "497d3cc75fd9a73de4316ab5be9d67ceee5f1d3708fa0ac693f3d0188fb6ffc4",
+    "reason": "Raw sweet potato batter: preparation stage"
+  },
+  "https://bepmina.vn/wp-content/uploads/2021/04/nau-che-buoi-khong-can-phen.jpeg": {
+    "id": 262,
+    "url": "images/dishes/262-9184b6a81147.jpg",
+    "sha256": "9184b6a811476b7dc53cb9fc9f5a93fed3e767ffe63eafb5f87b2ab36533ca90",
+    "reason": "Pomelo pith preparation rather than finished sweet soup"
+  },
+  "https://bepmina.vn/wp-content/uploads/2023/11/nam-dui-ga-kho-tieu.jpeg": {
+    "id": 641,
+    "url": "images/dishes/641-7f79ff159cd0.jpg",
+    "sha256": "7f79ff159cd0b760a3d671f615621f3a83e2b14d646a60d58ab36b0257c9254a",
+    "reason": "King oyster mushrooms instead of chicken thighs"
+  },
+  "https://bepmina.vn/wp-content/uploads/2021/09/ca-nuc-kho-nuoc-dua.jpg": {
+    "id": 869,
+    "url": "images/dishes/869-3e03314f1ebc.jpg",
+    "sha256": "3e03314f1ebc56ea0e2fee8f0b57237488c8e1c50c34325a582c97172a4da2b3",
+    "reason": "Raw marinating fish instead of finished braised fish"
+  }
+}

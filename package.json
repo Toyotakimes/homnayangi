@@ -6,15 +6,21 @@
   "scripts": {
     "dev": "vite",
     "build": "node scripts/build-deploy.mjs",
-    "test": "node src/utils/dishImageResolver.test.js",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "node --test src/utils/dishSearch.test.js src/utils/dishImageResolver.test.js",
+    "audit:images": "node scripts/audit-dish-images.mjs",
+    "test:website": "npm run build && node scripts/verify-website.mjs",
+    "audit:local-images": "node scripts/inspect-local-images.mjs"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^4.3.4",
-    "vite": "^6.0.5",
-    "typescript": "~5.7.2",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "typescript": "~5.7.2",
+    "vite": "^6.0.5"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "playwright": "^1.64.0",
+    "sharp": "^0.35.5"
+  }
 }

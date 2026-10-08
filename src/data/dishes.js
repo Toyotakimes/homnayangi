@@ -1,4 +1,5 @@
 import rawDishes from './dishes.json'
+import imageManifest from './dish-images.json'
 import { inferCookingMethod } from '../utils/cookingMethod'
 
 function normalizeImage(dish) {
@@ -8,6 +9,7 @@ function normalizeImage(dish) {
   const verified = Boolean(rawImage?.verified ?? dish.imageVerified) && confidence >= 80
   if (!url) return null
   return {
+    ...rawImage,
     url,
     source: rawImage?.source || dish.imageSource || '',
     sourceName: rawImage?.sourceName || dish.imageSourceName || '',
@@ -29,7 +31,8 @@ function normalizeImage(dish) {
 
 // Enrich records at the data boundary so the original 1,000-row JSON remains intact.
 const dishes = rawDishes.map(dish => {
-  const image = normalizeImage(dish)
+  const asset = imageManifest[dish.id]
+  const image = asset ? { ...asset, url: `${import.meta.env.BASE_URL}${asset.url}` } : normalizeImage(dish)
   return {
     ...dish,
     cookingMethod: dish.cookingMethod || inferCookingMethod(dish),

@@ -6,7 +6,7 @@ import RecipeDetail from './components/RecipeDetail'
 import { averageDishCost, estimateDishCost, formatMoney } from './utils/costCalculator'
 import { getDishRecipe, getScaledRecipeItems } from './utils/recipeScaler'
 import { chooseTray, generateWeekPlan } from './utils/mealGenerator'
-import { COOKING_METHOD_FILTERS, matchesCookingMethod } from './utils/cookingMethod'
+import DishCatalog from './components/DishCatalog'
 
 const moneyOptions = [
   { label: '≤ 50k/người', max: 50000 },
@@ -21,8 +21,16 @@ const dayNames = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 
 const moneyRange = cost => `${formatMoney(cost.min)}–${formatMoney(cost.max)}`
 
 function readStorage(key, fallback) {
-  try { return JSON.parse(localStorage.getItem(key) || 'null') ?? fallback }
+  try {
+    const value = JSON.parse(localStorage.getItem(key) || 'null')
+    return Array.isArray(fallback) ? (Array.isArray(value) ? value : fallback)
+      : value && typeof value === 'object' && !Array.isArray(value) ? value : fallback
+  }
   catch { return fallback }
+}
+
+function writeStorage(key, value) {
+  try { localStorage.setItem(key, JSON.stringify(value)) } catch { /* Keep the UI usable when storage is blocked or full. */ }
 }
 
 function mealMatches(dish, meal) {
@@ -61,10 +69,6 @@ function App() {
   const [people, setPeople] = useState(2)
   const [budget, setBudget] = useState(80000)
   const [mode, setMode] = useState('Món đơn')
-  const [search, setSearch] = useState('')
-  const [cookingMethod, setCookingMethod] = useState('Tất cả')
-  const [priceRange, setPriceRange] = useState('Tất cả')
-  const [visibleDishCount, setVisibleDishCount] = useState(150)
   const [selected, setSelected] = useState(null)
   const [tray, setTray] = useState([])
   const [tab, setTab] = useState('Hôm nay')
@@ -73,27 +77,12 @@ function App() {
   const [weekPlan, setWeekPlan] = useState(() => readStorage('homnayangi_week', []))
   const [checkedShopping, setCheckedShopping] = useState(() => readStorage('homnayangi_checked_shopping', {}))
 
-  useEffect(() => localStorage.setItem('homnayangi_likes', JSON.stringify(likes)), [likes])
-  useEffect(() => localStorage.setItem('homnayangi_history', JSON.stringify(history.slice(0, 50))), [history])
-  useEffect(() => localStorage.setItem('homnayangi_week', JSON.stringify(weekPlan)), [weekPlan])
-  useEffect(() => localStorage.setItem('homnayangi_checked_shopping', JSON.stringify(checkedShopping)), [checkedShopping])
-  useEffect(() => setVisibleDishCount(150), [meal, budget, search, cookingMethod, priceRange])
+  useEffect(() => writeStorage('homnayangi_likes', likes), [likes])
+  useEffect(() => writeStorage('homnayangi_history', history.slice(0, 50)), [history])
+  useEffect(() => writeStorage('homnayangi_week', weekPlan), [weekPlan])
+  useEffect(() => writeStorage('homnayangi_checked_shopping', checkedShopping), [checkedShopping])
 
-  const filtered = useMemo(() => dishes.filter(dish => {
-    const query = search.toLocaleLowerCase('vi').trim()
-    const searchable = `${dish.name} ${dish.category} ${dish.style || ''} ${dish.cookingMethod}`.toLocaleLowerCase('vi')
-    const averagePrice = averageDishCost(dish, 1)
-    const inPriceRange = priceRange === 'Tất cả'
-      || (priceRange === '0-30000' && averagePrice <= 30000)
-      || (priceRange === '30000-60000' && averagePrice > 30000 && averagePrice <= 60000)
-      || (priceRange === '60000-100000' && averagePrice > 60000 && averagePrice <= 100000)
-      || (priceRange === '100000+' && averagePrice > 100000)
-    return mealMatches(dish, meal)
-      && matchesCookingMethod(dish, cookingMethod)
-      && averagePrice <= budget
-      && inPriceRange
-      && (!query || searchable.includes(query))
-  }), [meal, budget, search, cookingMethod, priceRange])
+  const filtered = useMemo(() => dishes.filter(dish => mealMatches(dish, meal) && averageDishCost(dish, 1) <= budget), [meal, budget])
 
   const like = dish => setLikes(previous => previous.includes(dish.id)
     ? previous.filter(id => id !== dish.id)
@@ -102,6 +91,15 @@ function App() {
     { id: dish.id, name: dish.name, at: new Date().toLocaleString('vi-VN') },
     ...previous.filter(item => item.id !== dish.id),
   ])
+
+  const selectDish = dish => {
+    setSelected(dish)
+    setTray([])
+    setMode('Món đơn')
+    setTab('Hôm nay')
+    remember(dish)
+    requestAnimationFrame(() => document.getElementById('selected-dish')?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+  }
 
   const pickDish = () => {
     const recentIds = new Set(history.slice(0, 10).map(item => item.id))
@@ -130,7 +128,6 @@ function App() {
   }, [])
 
   const likedDishes = dishes.filter(dish => likes.includes(dish.id))
-  const visibleDishes = filtered.slice(0, visibleDishCount)
   const trayCost = tray.reduce((total, dish) => {
     const cost = estimateDishCost(dish, people)
     return { min: total.min + cost.min, max: total.max + cost.max }
@@ -182,7 +179,7 @@ function App() {
         <button className="primary" onClick={mode === 'Mâm cơm' ? pickTray : pickDish}>🎲 Chọn cho tôi</button>
       </section>
 
-      <section className="result-section">
+      <section className="result-section" id="selected-dish">
         <div className="section-title"><div><span className="eyebrow">ĐỀ XUẤT HÔM NAY</span>
           <h2>{mode === 'Mâm cơm' ? `Mâm cơm cho ${people} người` : 'Món dành cho bạn'}</h2></div>
           <button className="ghost" onClick={mode === 'Mâm cơm' ? pickTray : pickDish}>↻ Đổi món</button></div>
@@ -196,32 +193,10 @@ function App() {
         {selected && <DishCard dish={selected} onLike={like} liked={likes.includes(selected.id)} people={people}/>}
         {tray.length > 0 && <div className="grid">{tray.map(dish => <DishCard key={dish.id} dish={dish} onLike={like} liked={likes.includes(dish.id)} people={people} compact/>)}</div>}
       </section>
+      {mode === 'Món đơn' && <section className="page today-catalog"><DishCatalog today people={people} likes={likes} onLike={like} onSelect={selectDish}/></section>}
     </>}
 
-    {tab === 'Món ăn' && <section className="page">
-      <div className="section-title"><div><span className="eyebrow">KHO MÓN</span><h2>1.000 món Việt</h2></div></div>
-      <div className="catalog-tools">
-        <input className="search" placeholder="Tìm phở, bún, gà, cá, đặc sản..." value={search} onChange={event => setSearch(event.target.value)} />
-        <select aria-label="Lọc theo bữa" value={meal} onChange={event => setMeal(event.target.value)}>{meals.map(item => <option key={item}>{item}</option>)}</select>
-        <select aria-label="Ngân sách tối đa mỗi người" value={budget} onChange={event => setBudget(Number(event.target.value))}>
-          {moneyOptions.map(option => <option key={option.max} value={option.max}>{option.label}</option>)}
-        </select>
-        <select aria-label="Khoảng giá mỗi người" value={priceRange} onChange={event => setPriceRange(event.target.value)}>
-          <option value="Tất cả">Mọi khoảng giá</option>
-          <option value="0-30000">≤ 30.000đ/người</option>
-          <option value="30000-60000">30.000–60.000đ/người</option>
-          <option value="60000-100000">60.000–100.000đ/người</option>
-          <option value="100000+">&gt; 100.000đ/người</option>
-        </select>
-      </div>
-      <div className="method-filter" role="group" aria-label="Lọc theo phương pháp chế biến">
-        {COOKING_METHOD_FILTERS.map(method => <button type="button" className={cookingMethod === method ? 'selected' : ''}
-          aria-pressed={cookingMethod === method} onClick={() => setCookingMethod(method)} key={method}>{method}</button>)}
-      </div>
-      <div className="grid">{visibleDishes.map(dish => <DishCard key={dish.id} dish={dish} onLike={like} liked={likes.includes(dish.id)} people={people} compact/>)}</div>
-      <p className="center muted">Đang hiển thị {visibleDishes.length} / {filtered.length} món phù hợp.</p>
-      {visibleDishes.length < filtered.length && <div className="load-more"><button className="ghost" onClick={() => setVisibleDishCount(count => count + 150)}>Xem thêm {Math.min(150, filtered.length - visibleDishes.length)} món</button></div>}
-    </section>}
+    {tab === 'Món ăn' && <section className="page"><DishCatalog people={people} likes={likes} onLike={like} onSelect={selectDish}/></section>}
 
     {tab === '7 ngày' && <section className="page">
       <div className="section-title"><div><span className="eyebrow">THỰC ĐƠN TUẦN</span><h2>Ăn gì trong 7 ngày?</h2></div>

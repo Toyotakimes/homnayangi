@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { dishImageCacheKey, getAvailableDishImage, resolveDishImage } from '../utils/dishImageResolver'
+import { dishImageCacheKey, getAvailableDishImage, resolveDishImage, invalidateDishImage } from '../utils/dishImageResolver'
 
 export const fallbackImage =
   "data:image/svg+xml;charset=UTF-8," +
@@ -41,10 +41,12 @@ export default function FoodImage({ dish, className = '' }) {
   const image = candidate?.url === failedUrl ? null : candidate
   return <div className="food-image-wrap" ref={imageRef}>
     <img className={className} loading="lazy" src={image?.url || fallbackImage}
-      alt={image ? dish.name : 'Chưa có ảnh món ăn được xác minh'}
+      alt={image ? dish.name : `${dish.name} — chưa có ảnh thực tế được xác minh`}
       onError={image ? () => {
+        invalidateDishImage(dish, image.url)
         setFailedUrl(image.url)
       } : undefined} />
+    {!image && <span className="image-missing-label">Chưa có ảnh thực tế</span>}
     {image?.sourceUrl && <a className="image-credit" href={image.sourceUrl}
       target="_blank" rel="noreferrer" title={`Nguồn: ${image.title}`}>
       Ảnh: {image.sourceName || image.source}

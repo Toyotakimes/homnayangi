@@ -1,0 +1,19 @@
+{
+  "passed": true,
+  "totalDishes": 1000,
+  "originalDataUnchanged": true,
+  "bundledPhotos": 108,
+  "results": [
+    "Hôm nay/Món đơn: default 20 cards, load another 20, full 1000-row dataset",
+    "Accented/unaccented search returns identical lists; near-word typo works",
+    "Empty-state, foreign-cuisine empty-state and cooking-method filter",
+    "Loaded and compared the names and order of all 1000 cards",
+    "Món ăn: recipe details and selecting a dish update Hôm nay; real built image loads",
+    "All 108 bundled photos return HTTP 200 under /homnayangi/",
+    "Existing weekly menu and shopping list still work",
+    "Mobile navigation/search works when localStorage writes are blocked",
+    "Image failure shows placeholder, records the dish and blocks the failed URL after reload"
+  ],
+  "errors": [],
+  "deploymentVerified": false
+}

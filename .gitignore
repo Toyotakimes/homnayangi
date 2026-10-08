@@ -5,3 +5,10 @@ dist
 deploy-artifacts/
 pages-build/
 .pages-history-*/
+
+# Local QA tools and generated inspection artifacts
+/reports/qa-tools/
+/reports/qa-data.mjs
+/reports/image-contact-sheets/
+/reports/website-desktop.png
+/reports/website-mobile.png

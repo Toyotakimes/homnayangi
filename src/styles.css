@@ -77,3 +77,6 @@ button,.ghost,.primary,.site-header nav button{touch-action:manipulation}
 .method-filter button.selected{border-color:#ea580c;background:#fff0e3;color:#c2410c;box-shadow:0 2px 8px #c2410c12}
 @media(max-width:920px){.catalog-tools{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:620px){.catalog-tools{grid-template-columns:1fr}.method-filter{flex-wrap:nowrap;overflow-x:auto;overscroll-behavior-x:contain;padding:3px 0 10px;scrollbar-width:thin}.method-filter button{min-height:44px}}
+.dish-title-button{border:0;padding:0;background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer}.dish-title-button:hover{color:#c2410c}.dish-category{font-size:13px;color:#735545}.dish-actions{display:flex;flex-wrap:wrap;gap:8px}.dish-actions button{flex:1;padding:10px;font-size:13px}.today-catalog{padding-top:0}#selected-dish{scroll-margin-top:110px}
+
+.image-missing-label{position:absolute;bottom:8px;left:8px;background:#fffaf5e6;color:#735545;border-radius:7px;padding:5px 8px;font-size:11px}
